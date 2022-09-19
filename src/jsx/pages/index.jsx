@@ -1,5 +1,13 @@
-import React from 'react';
+// import React from 'react';
+import React, {useEffect, useState} from "react";
 import { Link } from 'react-router-dom';
+import {db} from '../pages/firebase-config.js';
+import {
+    collection,
+    getDocs,
+} from "firebase/firestore";
+import CurrencyRow from "../pages/currencyRow.js";
+
 import BtcChart from '../charts/btc';
 import DashChart from '../charts/dash';
 import EosChart from '../charts/eos';
@@ -19,9 +27,75 @@ import Bottom from './../element/bottom';
 
 
 function Homepage() {
-    let amount,
-        USDT,
-        USDCASH;
+    const usersCollectionRef = collection(db, "users");
+    const [select1, setSelect1] = useState([])
+    const [select2, setSelect2] = useState([])
+    const [currencyOptions, setCurrencyOptions] = useState([]);
+    const [fromCurrency, setFromCurrency] = useState('');
+    const [toCurrency, setToCurrency] = useState('');
+    const [amount, setAmount] = useState(1);
+    const [exchangeRate, setExchangeRate] = useState(1);
+    const [amountInFromCurrency, setAmountInFromCurrency] = useState(true);
+
+
+    let toAmount, fromAmount;
+    if (amountInFromCurrency) {
+        fromAmount = amount;
+        toAmount = amount * exchangeRate;
+    } else {
+        toAmount = amount;
+        fromAmount = amount / exchangeRate;
+    }
+
+    const getUsers = async () => {
+        const data = await getDocs(usersCollectionRef);
+        const value = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
+
+
+        const valueSelect = Object.values(value).map((i) => {
+            return { base_code: i.base_code, map: Object.keys(i.rates), rates: i.rates }
+        })
+
+
+        const sel = valueSelect.map((a) => a.base_code)
+
+
+        setFromCurrency(sel[0]);
+        setSelect1(sel)
+        setCurrencyOptions(valueSelect)
+    };
+
+    useEffect(() => {
+        getUsers();
+    }, []);
+
+
+    useEffect(() => {
+        const rate = currencyOptions.find((s) => s.base_code === fromCurrency)?.rates[toCurrency]
+        if (rate) {
+            setExchangeRate(+rate)
+        }
+    }, [toCurrency, fromCurrency])
+
+
+    useEffect(() => {
+        const a = currencyOptions.find((s) => s.base_code === fromCurrency)
+        if (a) {
+            setSelect2(a?.map)
+            setToCurrency(a.map[0]);
+        }
+    }, [fromCurrency, currencyOptions])
+
+
+    function handleFromAmount(e) {
+        setAmount(e.target.value);
+        setAmountInFromCurrency(true);
+    }
+
+    function handleToAmount(e) {
+        setAmount(e.target.value);
+        setAmountInFromCurrency(false);
+    }
 
     return (
         <>
@@ -49,23 +123,40 @@ function Homepage() {
                                     <div className="mb-3">
                                         <label className="me-sm-2">Ви відправляєте:</label>
                                         <div className="input-group mb-3">
-                                            <input type="number" name="usd_amount" className="form-control" value={amount} placeholder={125} />
-                                            <select name='currency' className="form-control">
-                                                <option data-display="USDT" value={USDT}>USDT</option>
-                                                <option value={USDCASH}>USD CASH</option>
-                                            </select>
+                                            {/*<input className="form-control" amount={toAmount} onchangeAmount={handleFromAmount} placeholder={125} />*/}
+                                            {/*<select name='currency' className="form-control">*/}
+                                            {/*    currencyOptions={select1} selectedCurrency={fromCurrency}*/}
+                                            {/*</select>*/}
+                                            <CurrencyRow
+                                                    currencyOptions={select1}
+                                                    selectedCurrency={fromCurrency}
+                                                onchangeCurrency={(e) => {
+                                                    setFromCurrency(e.target.value);
+                                                }}
+                                                amount={fromAmount}
+                                                onchangeAmount={handleFromAmount}
+                                            />
                                         </div>
                                     </div>
 
                                     <div className="mb-3">
                                         <label className="me-sm-2">Ви отримаєте:</label>
-                                        <div className="input-group mb-3">
-                                            <input type="text" name="usd_amount" className="form-control" value={amount} placeholder={125} />
-                                            <select name='currency' className="form-control">
-                                                <option data-display="USDT" value={USDT}>USDT</option>
-                                                <option value={USDCASH}>USD CASH</option>
-                                            </select>
-                                        </div>
+                                        {/*<div className="input-group mb-3">*/}
+                                            {/*<input type="text" name="usd_amount" className="form-control" value={amount} placeholder={125} />*/}
+                                            {/*<select name='currency' className="form-control">*/}
+                                            {/*    <option data-display="USDT" value={select2}>USDT</option>*/}
+                                            {/*    <option value={select1}>USD CASH</option>*/}
+                                            {/*</select>*/}
+                                            <CurrencyRow
+                                                currencyOptions={select2}
+                                                selectedCurrency={toCurrency}
+                                                onchangeCurrency={(e) => {
+                                                    setToCurrency(e.target.value);
+                                                }}
+                                                amount={toAmount}
+                                                onchangeAmount={handleToAmount}
+                                            />
+                                        {/*</div>*/}
                                         <div className="d-flex justify-content-between mt-0 align-items-center">
                                             <p className="mb-0">Резерв валюти</p>
                                             <h6 className="mb-0">250 493 USD CASH</h6>

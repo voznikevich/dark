@@ -56,6 +56,7 @@
   :root {
     scroll-behavior: smooth; } }
 
+
 body {
   margin: 0;
   font-family: "Gilroy", sans-serif;
@@ -1920,6 +1921,7 @@ textarea.form-control-lg {
   background-color: #e9ecef;
   border: 1px solid #ced4da;
   border-radius: 0.25rem; }
+
 
 .input-group-lg > .form-control,
 .input-group-lg > .form-select,
